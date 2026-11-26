@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbfaf7">
+  <title>牛马鼓励器</title>
+  <style>
+    :root { --purple:#705785; --gold:#b58b52; --ink:#443459; --muted:#857b89; --cream:#fbfaf7; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--cream); color:var(--ink); font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; }
+    button,input { font:inherit; }
+    button { cursor:pointer; border:0; }
+    .page { max-width:540px; margin:auto; padding:24px 18px calc(42px + env(safe-area-inset-bottom)); }
+    header,.progress-title,.month-nav { display:flex; justify-content:space-between; align-items:center; }
+    header { margin-bottom:18px; }
+    h1 { font-size:22px; margin:0; }
+    .open-settings,.month-nav button { color:var(--purple); background:#eee9f2; border-radius:20px; padding:9px 13px; }
+    .hero { background:#f3eff2; border-radius:18px; padding:23px 20px; }
+    .eyebrow { font-size:12px; color:var(--gold); font-weight:700; letter-spacing:.04em; }
+    .hero strong { display:block; font-size:19px; margin-top:9px; line-height:1.5; }
+    .clock { text-align:center; font-size:44px; font-weight:750; margin-top:18px; font-variant-numeric:tabular-nums; }
+    .status { color:var(--purple); text-align:center; min-height:24px; margin:2px 0 16px; }
+    .quote { background:white; color:var(--muted); border-radius:14px; text-align:center; padding:15px; line-height:1.6; }
+    .cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:17px; }
+    .tile { min-height:103px; padding:16px 13px; border-radius:16px; overflow:hidden; }
+    .tile:nth-child(1) { background:#f2edf3; }.tile:nth-child(2) { background:#f9f2e8; }
+    .tile:nth-child(3) { background:#f5f2f5; }.tile:nth-child(4) { background:#f8f4ed; }
+    .tile small { display:block; color:var(--purple); font-size:12px; }
+    .tile:nth-child(even) small { color:var(--gold); }
+    .tile b { display:block; margin-top:11px; font-size:clamp(16px,5vw,23px); white-space:nowrap; font-variant-numeric:tabular-nums; }
+    .tile em { display:block; font-size:11px; color:var(--muted); font-style:normal; margin-top:3px; }
+    .progress-title { margin:22px 0 10px; font-size:13px; }
+    .progress-title span:last-child { color:var(--purple); }
+    .track { height:9px; background:#ede8ec; border-radius:20px; overflow:hidden; }
+    .fill { height:100%; width:0; background:var(--purple); border-radius:20px; }
+    footer { text-align:center; color:var(--gold); margin-top:21px; font-size:12px; }
+    .overlay { position:fixed; inset:0; background:rgba(37,28,46,.5); display:none; z-index:5; }
+    .overlay.visible { display:block; }
+    .sheet { position:absolute; inset:auto 0 0; max-height:92dvh; overflow:auto; background:var(--cream);
+      border-radius:24px 24px 0 0; padding:18px 18px calc(20px + env(safe-area-inset-bottom)); }
+    .sheet-inner { max-width:540px; margin:auto; }
+    .sheet-head { display:flex; align-items:center; justify-content:space-between; }
+    .sheet h2 { font-size:20px; margin:0; }
+    .dismiss { background:#eee9f2; color:var(--purple); border-radius:50%; width:36px; height:36px; font-size:22px; }
+    .hint { color:var(--muted); font-size:12px; line-height:1.55; margin:10px 0 16px; }
+    .panel { background:white; border-radius:16px; padding:17px; margin-bottom:13px; }
+    .panel h3 { font-size:16px; margin:0 0 12px; }
+    .field { display:flex; justify-content:space-between; align-items:center; gap:15px; border-top:1px solid #f0edf0; padding:10px 0; font-size:14px; }
+    .field input { max-width:140px; text-align:right; color:var(--purple); border:0; background:transparent; padding:5px 0; }
+    .weekdays { display:flex; justify-content:space-between; gap:5px; }
+    .weekdays label { width:36px; height:36px; display:grid; place-items:center; position:relative; border-radius:50%; background:#f5f2f5; color:var(--muted); }
+    .weekdays label.checked { background:#eee9f2; color:var(--purple); font-weight:700; }
+    .weekdays input { position:absolute; opacity:0; width:100%; height:100%; margin:0; }
+    .month-nav { margin:14px 0; font-size:15px; }
+    .month-nav button { padding:8px; font-size:12px; }
+    .calendar { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+    .weekday { text-align:center; font-size:12px; color:var(--muted); padding-bottom:6px; }
+    .day { min-height:54px; border-radius:9px; color:var(--ink); background:#f5f3f5; font-size:13px; padding:5px 0; }
+    .day span { display:block; font-size:10px; margin-top:3px; }
+    .day.work { background:#eee9f2; }.day.leave { background:#faf1e4; color:#946e3d; }
+    .day.selected { outline:2px solid var(--purple); outline-offset:-2px; }
+    .day.empty { visibility:hidden; }
+    .choice-wrap { display:none; border-top:1px solid #f0edf0; margin-top:17px; padding-top:14px; }
+    .choice-wrap.visible { display:block; }
+    .choices { display:flex; gap:8px; margin-top:12px; }
+    .choice { flex:1; padding:10px; border-radius:9px; background:#f5f3f5; }
+    .choice.active { background:var(--purple); color:white; }
+    .save { display:block; width:100%; background:var(--purple); color:white; border-radius:12px; padding:13px; font-size:16px; }
+    @media (max-width:350px) { .tile { padding:12px 8px; } .tile b { font-size:16px; } .hero strong { font-size:17px; } }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header><h1>牛马鼓励器</h1><button class="open-settings" id="openSettings">设置 ›</button></header>
+    <section class="hero"><div class="eyebrow">WORKDAY · 一点点坚持</div><strong>牛马加油，今天也能稳稳拿下！</strong></section>
+    <div id="clock" class="clock">--:--:--</div><div id="status" class="status"></div>
+    <div id="quote" class="quote"></div>
+    <div class="cards">
+      <div class="tile"><small>01 · 今日已赚</small><b id="todayMoney">¥0.00</b></div>
+      <div class="tile"><small>02 · 本月已赚</small><b id="monthMoney">¥0.00</b></div>
+      <div class="tile"><small>03 · 已上班的日子</small><b id="workedDays">0 天</b><em id="todayWorking"></em></div>
+      <div class="tile"><small>04 · 距离下班</small><b id="countdown">--:--:--</b></div>
+    </div>
+    <div class="progress-title"><span>今日进度 · 再坚持一会儿</span><span id="progressText">0.0%</span></div>
+    <div class="track"><div id="progress" class="fill"></div></div>
+    <footer>努力有回报，下班更快乐 · 加油！</footer>
+  </main>
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="作息和日期设置">
+    <div class="sheet"><div class="sheet-inner">
+      <div class="sheet-head"><h2>安排好作息，安心赚工资</h2><button id="closeSettings" class="dismiss" aria-label="关闭设置">×</button></div>
+      <p class="hint">固定工作日作默认；调休、补班、请假可按日期单独设置。</p>
+      <section class="panel"><h3>作息与日薪</h3>
+        <label class="field">上班时间<input type="time" id="workStart"></label>
+        <label class="field">午休开始<input type="time" id="lunchStart"></label>
+        <label class="field">午休结束<input type="time" id="lunchEnd"></label>
+        <label class="field">下班时间<input type="time" id="workEnd"></label>
+        <label class="field">日薪（元）<input type="number" min="0.01" step="0.01" inputmode="decimal" id="dailyWage"></label>
+      </section>
+      <section class="panel"><h3>固定工作日 · 默认安排</h3><div class="weekdays" id="weekdays"></div></section>
+      <section class="panel"><h3>每月上班日期</h3>
+        <div class="month-nav"><button id="previousMonth">‹ 上个月</button><strong id="monthTitle"></strong><button id="nextMonth">下个月 ›</button></div>
+        <div class="calendar" id="calendar"></div>
+        <div class="choice-wrap" id="choiceWrap"><strong id="selectedTitle"></strong><div class="choices" id="choices"></div></div>
+        <p class="hint">紫色上班 · 灰色休息 · 金色请假。休息和请假不计薪；今天未下班不计入已上班天数。</p>
+      </section>
+      <button class="save" id="saveSettings">保存安排</button>
+    </div></div>
+  </div>
+  <script>
+    const DEFAULT = {workStart:'08:30',lunchStart:'11:45',lunchEnd:'13:15',workEnd:'18:00',
+      dailyWage:180,workDays:[1,2,3,4,5],dateOverrides:{}};
+    const QUOTES = ['每一秒都在赚钱，摸鱼也是带薪摸鱼。','今天的努力，都是下班后快乐的底气。',
+      '坚持住！距离下班又近了一点。','认真上班，也别忘了给自己一点喘息。','牛马也要好好吃饭，攒钱更要照顾自己。'];
+    const $ = id => document.getElementById(id);
+    const pad = n => String(n).padStart(2,'0');
+    const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const at = (d,t) => { const [h,m]=t.split(':').map(Number); return new Date(d.getFullYear(),d.getMonth(),d.getDate(),h,m); };
+    function readConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('niumaMobileConfig'));
+        if (saved && typeof saved === 'object') return {...DEFAULT,...saved,
+          workDays:Array.isArray(saved.workDays)?saved.workDays:DEFAULT.workDays.slice(),
+          dateOverrides:saved.dateOverrides && typeof saved.dateOverrides==='object'?saved.dateOverrides:{}};
+      } catch (error) { /* 无可用存储时仍可使用默认设置 */ }
+      return {...DEFAULT,workDays:DEFAULT.workDays.slice(),dateOverrides:{}};
+    }
+    let config = readConfig(), draft, month = new Date(new Date().getFullYear(),new Date().getMonth(),1), selected = '';
+    function dayType(c,d) { return c.dateOverrides[keyOf(d)] || (c.workDays.includes(d.getDay())?'work':'rest'); }
+    function todayEarned(c,now) {
+      if (dayType(c,now)!=='work') return 0;
+      const start=at(now,c.workStart), ls=at(now,c.lunchStart), le=at(now,c.lunchEnd), end=at(now,c.workEnd);
+      const total=(ls-start)+(end-le);
+      if(total<=0) return 0;
+      return c.dailyWage*(Math.max(0,Math.min(now-start,ls-start))+Math.max(0,Math.min(now-le,end-le)))/total;
+    }
+    function monthStats(c,now) {
+      let earned=0,days=0;
+      for(let n=1;n<=now.getDate();n++) {
+        const date=new Date(now.getFullYear(),now.getMonth(),n);
+        if(dayType(c,date)!=='work') continue;
+        if(n<now.getDate()) { earned+=c.dailyWage; days++; }
+        else { earned+=todayEarned(c,now); if(now>=at(now,c.workEnd)) days++; }
+      }
+      return {earned,days};
+    }
+    function duration(ms) {
+      let s=Math.max(0,Math.floor(ms/1000)); const h=Math.floor(s/3600); s%=3600;
+      return `${pad(h)}:${pad(Math.floor(s/60))}:${pad(s%60)}`;
+    }
+    function tick(now=new Date()) {
+      const type=dayType(config,now),today=todayEarned(config,now),stats=monthStats(config,now);
+      let status,countdown,progress=0;
+      if(type==='leave') { status='今天请假，不计薪';countdown='今日请假'; }
+      else if(type==='rest') { status='今天休息，好好享受生活吧';countdown='今日休息'; }
+      else {
+        const start=at(now,config.workStart), end=at(now,config.workEnd);
+        if(now<start) { status='还没上班，再睡会儿';countdown=duration(start-now)+' 后上班'; }
+        else if(now>=end) { status='已经下班，自由了！';countdown='已下班';progress=100; }
+        else {
+          status=now>=at(now,config.lunchStart)&&now<at(now,config.lunchEnd)
+            ? '午休时间，好好休息' : '努力上班中，离下班又近一步！';
+          countdown=duration(end-now); progress=Math.min(100,100*today/config.dailyWage);
+        }
+      }
+      $('clock').textContent=`${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      $('status').textContent=status; $('countdown').textContent=countdown;
+      $('todayMoney').textContent='¥'+today.toFixed(2); $('monthMoney').textContent='¥'+stats.earned.toFixed(2);
+      $('workedDays').textContent=stats.days+' 天';
+      $('todayWorking').textContent=type==='work'&&now>=at(now,config.workStart)&&now<at(now,config.workEnd)?'今日上班中，尚未计入':'';
+      $('progress').style.width=progress.toFixed(1)+'%'; $('progressText').textContent=progress.toFixed(1)+'%';
+      const index=Math.floor(new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime()/86400000)%QUOTES.length;
+      $('quote').textContent=QUOTES[index];
+    }
+    function renderWeekdays() {
+      $('weekdays').replaceChildren();
+      for(const [day,name] of [[1,'一'],[2,'二'],[3,'三'],[4,'四'],[5,'五'],[6,'六'],[0,'日']]) {
+        const label=document.createElement('label'),checkbox=document.createElement('input');
+        checkbox.type='checkbox';checkbox.checked=draft.workDays.includes(day);
+        label.className=checkbox.checked?'checked':'';
+        checkbox.addEventListener('change',()=>{
+          draft.workDays=checkbox.checked?[...draft.workDays,day]:draft.workDays.filter(n=>n!==day);
+          label.className=checkbox.checked?'checked':''; renderCalendar();
+        });
+        label.append(checkbox,document.createTextNode(name)); $('weekdays').append(label);
+      }
+    }
+    function renderChoices() {
+      $('choiceWrap').classList.toggle('visible',!!selected);
+      if(!selected) return;
+      const date=new Date(Number(selected.slice(0,4)),Number(selected.slice(5,7))-1,Number(selected.slice(8,10)));
+      const current=dayType(draft,date);$('selectedTitle').textContent=selected+' · 当前'+{work:'上班',rest:'休息',leave:'请假'}[current];
+      $('choices').replaceChildren();
+      for(const [type,name] of [['work','上班'],['rest','休息'],['leave','请假']]) {
+        const button=document.createElement('button');button.className='choice'+(current===type?' active':'');
+        button.textContent=name;button.addEventListener('click',()=>{
+          const fallback=draft.workDays.includes(date.getDay())?'work':'rest';
+          if(type===fallback) delete draft.dateOverrides[selected]; else draft.dateOverrides[selected]=type;
+          renderCalendar();
+        });$('choices').append(button);
+      }
+    }
+    function renderCalendar() {
+      const year=month.getFullYear(),m=month.getMonth(),count=new Date(year,m+1,0).getDate();
+      $('monthTitle').textContent=`${year} 年 ${m+1} 月`;
+      const grid=$('calendar');grid.replaceChildren();
+      for(const name of ['一','二','三','四','五','六','日']) {
+        const label=document.createElement('div');label.className='weekday';label.textContent=name;grid.append(label);
+      }
+      for(let i=0;i<(new Date(year,m,1).getDay()+6)%7;i++) {
+        const blank=document.createElement('div');blank.className='day empty';grid.append(blank);
+      }
+      for(let n=1;n<=count;n++) {
+        const date=new Date(year,m,n),key=keyOf(date),type=dayType(draft,date),button=document.createElement('button');
+        button.className='day '+type+(selected===key?' selected':'');button.type='button';
+        button.setAttribute('aria-label',key+' '+{work:'上班',rest:'休息',leave:'请假'}[type]);
+        const number=document.createElement('div'),label=document.createElement('span');
+        number.textContent=n;label.textContent={work:'上班',rest:'休息',leave:'请假'}[type];button.append(number,label);
+        button.addEventListener('click',()=>{ selected=key;renderCalendar(); });grid.append(button);
+      }
+      renderChoices();
+    }
+    $('openSettings').addEventListener('click',()=>{
+      draft={...config,workDays:config.workDays.slice(),dateOverrides:{...config.dateOverrides}};
+      for(const name of ['workStart','lunchStart','lunchEnd','workEnd','dailyWage']) $(name).value=config[name];
+      const now=new Date();month=new Date(now.getFullYear(),now.getMonth(),1);selected='';
+      renderWeekdays();renderCalendar();$('overlay').classList.add('visible');document.body.style.overflow='hidden';
+    });
+    function close() { $('overlay').classList.remove('visible');document.body.style.overflow=''; }
+    $('closeSettings').addEventListener('click',close);
+    $('overlay').addEventListener('click',event=>{if(event.target===$('overlay'))close();});
+    $('previousMonth').addEventListener('click',()=>{month=new Date(month.getFullYear(),month.getMonth()-1,1);selected='';renderCalendar();});
+    $('nextMonth').addEventListener('click',()=>{month=new Date(month.getFullYear(),month.getMonth()+1,1);selected='';renderCalendar();});
+    $('saveSettings').addEventListener('click',()=>{
+      for(const name of ['workStart','lunchStart','lunchEnd','workEnd']) draft[name]=$(name).value;
+      draft.dailyWage=Number($('dailyWage').value);
+      const times=['workStart','lunchStart','lunchEnd','workEnd'].map(name=>draft[name]);
+      if(times.some(t=>!/^([01]\d|2[0-3]):[0-5]\d$/.test(t)) ||
+         times.some((t,i)=>i>0&&t<=times[i-1]) ||
+         !Number.isFinite(draft.dailyWage) || draft.dailyWage<=0 || draft.dailyWage>=10000000) {
+        alert('请检查时间顺序和日薪（必须大于 0）。');return;
+      }
+      try { localStorage.setItem('niumaMobileConfig',JSON.stringify(draft)); }
+      catch(error) { alert('保存失败，请检查浏览器是否允许本地存储。');return; }
+      config=draft;close();tick();
+    });
+    tick();setInterval(tick,1000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
+  </script>
+</body>
+</html>
